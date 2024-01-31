@@ -11,7 +11,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <slf4j.version>2.0.6</slf4j.version>
-    <pubnub.api.version>6.3.1</pubnub.api.version>
+    <pubnub.api.version>6.4.5</pubnub.api.version>
     <connect.api.version>3.3.2</connect.api.version>
     <junit.jupiter.version>5.9.2</junit.jupiter.version>
     <testcontainers.version>1.17.6</testcontainers.version>
@@ -93,28 +93,6 @@
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>3.4.1</version>
       </plugin>
-
-      <!--<plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <version>3.4.2</version>
-        <configuration>
-          <descriptorRefs>
-            <descriptorRef>id</descriptorRef>
-          </descriptorRefs>
-          <appendAssemblyId>false</appendAssemblyId>
-        </configuration>
-        <executions>
-          <execution>
-            <id>make-assembly</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>-->
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
@@ -146,7 +124,7 @@
             <configuration>
               <title>PubNub Kafka Connector</title>
               <documentationUrl>https://github.com/pubnub/kafka-connect-pubnub</documentationUrl>
-              <description>The PubNub Kafka Connector is a sink connector and source connector used to publish data from Apache Kafka into PubNub.
+              <description>The PubNub Kafka Connector is a sink connector used to publish data from Apache Kafka into PubNub.
               </description>
               <supportProviderName>PubNub</supportProviderName>
               <supportUrl>https://pubnub.com/support</supportUrl>
@@ -162,7 +140,6 @@
               <ownerUrl>https://pubnub.com/</ownerUrl>
               <componentTypes>
                 <componentType>sink</componentType>
-                <componentType>source</componentType>
               </componentTypes>
               <tags>
                 <tag>PubNub</tag>
