@@ -1,75 +1,79 @@
 package com.pubnub.kafka.connect;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
-import com.pubnub.api.UserId;
-import com.pubnub.api.PubNub;
 import com.pubnub.api.PNConfiguration;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.TopicPartition;
+import com.pubnub.api.PubNub;
+import com.pubnub.api.UserId;
+import org.apache.kafka.connect.sink.ErrantRecordReporter;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
+import org.apache.kafka.connect.sink.SinkTaskContext;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static com.pubnub.kafka.connect.PubNubKafkaConnectorConfig.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class PubNubKafkaSinkConnectorTask extends SinkTask {
+    private final Logger log = LoggerFactory.getLogger(this.toString());
 
-    private static final String STRING_COLUMN = "string-column";
-    private static final String NUMERIC_COLUMN = "numeric-column";
-    private static final String BOOLEAN_COLUMN = "boolean-column";
-
-    private final Logger log = LoggerFactory.getLogger(PubNubKafkaSinkConnectorTask.class);
-
+    @Nullable
     private PubNub pubnub;
-    private PubNubKafkaConnectorConfig config;
-    private List<String> sources;
+
+    @Nullable
+    private ErrantRecordReporter reporter;
 
     @Override
     public String version() {
         return PropertiesUtil.getConnectorVersion();
     }
 
+    CopyOnWriteArrayList<Exception> errorsEncountered = new CopyOnWriteArrayList<>();
+
+    @Override
+    public void initialize(SinkTaskContext context) {
+        super.initialize(context);
+        reporter = context.errantRecordReporter();
+    }
+
     @Override
     public void start(Map<String, String> properties) {
-        config = new PubNubKafkaConnectorConfig(properties);
+        PubNubKafkaConnectorConfig config = new PubNubKafkaConnectorConfig(properties);
         try {
-            final UserId userId = new UserId("myUniqueUserId");
-            String publishKey = properties.get("pubnub.publish_key");
-            String subscribeKey = properties.get("pubnub.subscribe_key");
-            String secretKey = properties.get("pubnub.secret_key");
+            final UserId userId = new UserId(config.getString("pubnub.user_id"));
+            String publishKey = config.getString("pubnub.publish_key");
+            String subscribeKey = config.getString("pubnub.subscribe_key");
+            String secretKey = config.getString("pubnub.secret_key");
 
             PNConfiguration pnConfiguration = new PNConfiguration(userId);
             pnConfiguration.setPublishKey(publishKey);
             pnConfiguration.setSubscribeKey(subscribeKey);
             pnConfiguration.setSecretKey(secretKey);
+            // TODO do we want to employ a retry strategy?
             pubnub = new PubNub(pnConfiguration);
-
-            String sourcesStr = properties.get("sources"); // "channels"
-            sources = Arrays.asList(sourcesStr.split(","));
-        }
-        catch(Exception error) {
-            log.error("Unable to initialize PubNub Connection", error);
+        } catch (Exception exception) {
+            log.error("Unable to initialize PubNub Connection", exception);
+            throw new IllegalStateException(exception);
         }
     }
 
     private void publish(SinkRecord record) {
-        pubnub.publish()
-            .channel(record.topic())
-            .message(record.value())
-            .async((result, publishStatus) -> {
-                if (publishStatus.isError()) {
-                    log.error("⛔️ Channel: '{}' Message: '{}' Published to PubNub Failed!", record.topic());
-                }
-                else {
-                    log.info("✅ Channel: '{}' Message: '{}' Published to PubNub Successfully!", record.topic(), record.value());
-                }
-            });
+        if (pubnub != null) {
+            pubnub.publish()
+                    .channel(record.topic())
+                    .message(record.value())
+                    .async((result, publishStatus) -> {
+                        if (publishStatus.isError()) {
+                            log.error("⛔️ Channel: '{}' Message {}: '{}' Publishing to PubNub Failed!", record.topic(), record.kafkaOffset(), record.value());
+                            if (reporter != null) {
+                                reporter.report(record, publishStatus.getErrorData().getThrowable());
+                            }
+                        } else {
+                            log.info("✅ Channel: '{}' Message {}: '{}' Published to PubNub Successfully!", record.topic(), record.kafkaOffset(), record.value());
+                        }
+                    });
+        }
     }
 
     @Override
@@ -80,13 +84,11 @@ public class PubNubKafkaSinkConnectorTask extends SinkTask {
     }
 
     @Override
-    public void flush(Map<TopicPartition, OffsetAndMetadata> map) {
-        return;
-    }
-
-    @Override
     public void stop() {
         log.info("Stopping PubNub Sink Connector Task");
+        if (pubnub != null) {
+            pubnub.destroy();
+        }
     }
-
 }
+

@@ -3,6 +3,7 @@
     "config": {
         "topics":"pubnub,pubnub1",
         "topics.regex":"",
+        "pubnub.user_id" : "myUserId123",
         "pubnub.publish_key": "demo",
         "pubnub.subscribe_key": "demo",
         "pubnub.secret_key": "demo",
@@ -10,5 +11,6 @@
         "tasks.max": "3",
         "value.deserializer":"custom.class.serialization.JsonDeserializer",
         "value.serializer":"custom.class.serialization.JsonSerializer"
+
     }
 }
