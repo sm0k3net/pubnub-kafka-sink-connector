@@ -46,7 +46,7 @@ You can see messages are being delivered successfully using the PubNub Web Conso
 ## 📝 Modify Settings
 
 Edit the configuration file: `./examples/pubnub-sink-connector.json`.
-Update the file to include your `publish_key`, `subscribe_key` and `secret_key`.
+Update the file to include your `user_id`, `publish_key`, `subscribe_key` and `secret_key`.
 Update the `topics` to match the topics you want to sink to PubNub.
 **Add `topics.regex` to match topic patterns!**
 
@@ -56,6 +56,7 @@ Update the `topics` to match the topics you want to sink to PubNub.
     "config": {
         "topics":"pubnub,pubnub1,pubnub2",
         "topics.regex":"",
+        "pubnub.user_id" : "myUserId123",
         "pubnub.publish_key": "demo",
         "pubnub.subscribe_key": "demo",
         "pubnub.secret_key": "demo",
